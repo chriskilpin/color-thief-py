@@ -14,6 +14,9 @@ import math
 
 from PIL import Image
 
+def hex_to_rgb(hex):
+    r, g, b = bytes.fromhex(hex)
+    return (r, g, b)
 
 class cached_property(object):
     """Decorator that creates converts a method with a single
@@ -50,7 +53,7 @@ class ColorThief(object):
         palette = self.get_palette(5, quality)
         return palette[0]
 
-    def get_palette(self, color_count=10, quality=10):
+    def get_palette(self, exclude, color_count=10, quality=10):
         """Build a color palette.  We are using the median cut algorithm to
         cluster similar colors.
 
@@ -65,18 +68,19 @@ class ColorThief(object):
         pixels = image.getdata()
         pixel_count = width * height
         valid_pixels = []
+        exclude = hex_to_rgb(exclude)
         for i in range(0, pixel_count, quality):
             r, g, b, a = pixels[i]
             # If pixel is mostly opaque and not white
             if a >= 125:
                 if not (r > 250 and g > 250 and b > 250):
-                    valid_pixels.append((r, g, b))
+                    if not (r == exclude[0] and g == exclude[1] and b == exclude[2]):
+                        valid_pixels.append((r, g, b))
 
         # Send array to quantize function which clusters values
         # using median cut algorithm
         cmap = MMCQ.quantize(valid_pixels, color_count)
         return cmap.palette
-
 
 class MMCQ(object):
     """Basic Python port of the MMCQ (modified median cut quantization)
